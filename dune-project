@@ -57,6 +57,7 @@ possible and does not make any assumptions about IO.
   xdg
   ordering
   dune-build-info
+  dot-merlin-reader
   spawn
   (omd (<= 1.3.1))
   (octavius (>= 1.2.2))
