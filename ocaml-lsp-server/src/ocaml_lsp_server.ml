@@ -1009,7 +1009,7 @@ let on_notification server (notification : Client_notification.t) :
     in
     state
 
-let start () =
+let start _use_merlin_files =
   let detached = Fiber.Pool.create () in
   let server = Fdecl.create Dyn.opaque in
   let store = Document_store.make server detached in
@@ -1094,6 +1094,6 @@ let start () =
              Server.notification server (Server_notification.ShowMessage log)))
     ]
 
-let run () =
+let run use_merlin_files =
   Unix.putenv "__MERLIN_MASTER_PID" (string_of_int (Unix.getpid ()));
-  Lev_fiber.run (Lev.Loop.default ()) ~f:start
+  Lev_fiber.run (Lev.Loop.default ()) ~f:(fun () -> start use_merlin_files)
