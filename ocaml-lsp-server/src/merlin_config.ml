@@ -162,19 +162,20 @@ module Process = struct
     Lev_fiber.Io.close t.stdin;
     Lev_fiber.Io.close t.stdout
 
-  let start ~dir =
-    match Bin.which "dune" with
+  let start_process ~prog ~args ~dir =
+    match Bin.which prog with
     | None ->
+      let error_msg = (Format.sprintf "%s binary not found" prog) in
       Jsonrpc.Response.Error.raise
         (Jsonrpc.Response.Error.make ~code:InternalError
-           ~message:"dune binary not found" ())
+           ~message:error_msg ())
     | Some prog ->
       let prog = Fpath.to_string prog in
       let stdin_r, stdin_w = Unix.pipe () in
       let stdout_r, stdout_w = Unix.pipe () in
       Unix.set_close_on_exec stdin_w;
       let pid =
-        let argv = [ prog; "ocaml-merlin"; "--no-print-directory" ] in
+        let argv = [ prog ] @ args in
         Pid.of_int
           (Spawn.spawn ~cwd:(Path dir) ~prog ~argv ~stdin:stdin_r
              ~stdout:stdout_w ())
@@ -196,6 +197,13 @@ module Process = struct
       let+ stdout = make stdout_r Input in
       let session = Lev_fiber_csexp.Session.create ~socket:false stdout stdin in
       { pid; initial_cwd = dir; stdin; stdout; session }
+
+  let start ~dir ~read_merlin_files =
+    let prog, args =
+      if read_merlin_files then ("dot-merlin-reader", [])
+      else ("dune", [ "ocaml-merlin"; "--no-print-directory" ])
+    in
+    start_process ~prog ~args ~dir
 end
 
 module Dot_protocol_io =
@@ -210,6 +218,7 @@ module Dot_protocol_io =
 type db =
   { running : (string, entry) Table.t
   ; pool : Fiber.Pool.t
+  ; read_merlin_files : bool
   }
 
 and entry =
@@ -240,7 +249,8 @@ let get_process t ~dir =
   match Table.find t.running dir with
   | Some p -> Fiber.return p
   | None ->
-    let* process = Process.start ~dir in
+    let read_merlin_files = t.read_merlin_files in
+    let* process = Process.start ~dir ~read_merlin_files in
     let entry = Entry.create t process in
     Table.add_exn t.running dir entry;
     let+ () = Fiber.Pool.task t.pool ~f:(fun () -> Process.waitpid process) in
