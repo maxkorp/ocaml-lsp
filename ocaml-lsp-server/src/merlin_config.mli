@@ -13,7 +13,7 @@ module DB : sig
 
   type t
 
-  val create : unit -> t
+  val create : read_merlin_files:bool -> t
 
   val stop : t -> unit Fiber.t
 
