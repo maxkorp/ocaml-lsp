@@ -1009,7 +1009,7 @@ let on_notification server (notification : Client_notification.t) :
     in
     state
 
-let start _read_merlin_files =
+let start read_merlin_files =
   let detached = Fiber.Pool.create () in
   let server = Fdecl.create Dyn.opaque in
   let store = Document_store.make server detached in
@@ -1049,7 +1049,7 @@ let start _read_merlin_files =
     Fdecl.set server
       (Server.make handler stream
          (State.create ~store ~merlin ~ocamlformat_rpc ~configuration ~detached
-            ~diagnostics ~symbols_thread ~wheel));
+            ~diagnostics ~symbols_thread ~wheel ~read_merlin_files));
     Fdecl.get server
   in
   let state = Server.state server in

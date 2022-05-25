@@ -398,8 +398,11 @@ module DB = struct
 
   let get t uri = create t uri
 
-  let create () =
-    { running = Table.create (module String) 0; pool = Fiber.Pool.create () }
+  let create ~read_merlin_files =
+    { running = Table.create (module String) 0
+    ; pool = Fiber.Pool.create ()
+    ; read_merlin_files
+    }
 
   let run t = Fiber.Pool.run t.pool
 
